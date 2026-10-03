@@ -2,15 +2,11 @@ import json
 from pathlib import Path
 from typing import List, Optional
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 
 app = FastAPI()
-
-# Allow POST (and the browser's OPTIONS check) from any website
-from fastapi import Request
-from fastapi.responses import JSONResponse, Response
 
 CORS_HEADERS = {
     "Access-Control-Allow-Origin": "*",
@@ -21,7 +17,6 @@ CORS_HEADERS = {
 
 @app.middleware("http")
 async def add_cors(request: Request, call_next):
-    # answer the browser's preflight check directly
     if request.method == "OPTIONS":
         return Response(status_code=204, headers=CORS_HEADERS)
     try:
@@ -32,9 +27,10 @@ async def add_cors(request: Request, call_next):
         response.headers[k] = v
     return response
 
-# ---- load the data once, when the function starts ----
+
+# ---- load the data once ----
 raw = json.loads((Path(__file__).parent / "q-vercel-latency.json").read_text(encoding="utf-8"))
-if isinstance(raw, dict):  # in case the records are wrapped in an object
+if isinstance(raw, dict):
     raw = next(v for v in raw.values() if isinstance(v, list))
 
 REGION_KEYS = ["region", "Region"]
@@ -60,7 +56,6 @@ records = [
 
 
 def percentile(values: List[float], p: float) -> float:
-    # same method as numpy.percentile (linear interpolation)
     s = sorted(values)
     k = (len(s) - 1) * p / 100
     lo = int(k)
@@ -90,5 +85,4 @@ def metrics(q: Query):
             "avg_uptime": sum(up) / len(up),
             "breaches": sum(1 for x in lat if x > q.threshold_ms),
         }
-    # regions appear at the top level and also under "regions", so either layout works
     return {**out, "regions": out}
