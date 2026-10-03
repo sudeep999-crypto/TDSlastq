@@ -68,8 +68,16 @@ class Query(BaseModel):
     threshold_ms: Optional[float] = 180
 
 
+@app.get("/")
+@app.get("/api")
+@app.get("/api/latency")
+def health():
+    return {"status": "ok", "usage": "POST {\"regions\": [...], \"threshold_ms\": 180}"}
+
+
 @app.post("/")
 @app.post("/api")
+@app.post("/api/latency")
 def metrics(q: Query):
     out = {}
     for region in q.regions:

@@ -6,15 +6,5 @@
       "config": { "includeFiles": "api/**" }
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-        "Access-Control-Allow-Headers": "*"
-      },
-      "dest": "api/index.py"
-    }
-  ]
+  "routes": [{ "src": "/(.*)", "dest": "api/index.py" }]
 }
