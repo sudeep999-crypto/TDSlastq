@@ -8,22 +8,32 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-CORS_HEADERS = {
+BASE_CORS = {
     "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-    "Access-Control-Allow-Headers": "*",
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Expose-Headers": "Access-Control-Allow-Origin",
+    "Access-Control-Max-Age": "86400",
 }
+
+
+def cors_for(request: Request) -> dict:
+    h = dict(BASE_CORS)
+    asked = request.headers.get("access-control-request-headers")
+    if asked:  # also allow whatever the browser says it will send
+        h["Access-Control-Allow-Headers"] = "Content-Type, Authorization, " + asked
+    return h
 
 
 @app.middleware("http")
 async def add_cors(request: Request, call_next):
     if request.method == "OPTIONS":
-        return Response(status_code=204, headers=CORS_HEADERS)
+        return Response(status_code=204, headers=cors_for(request))
     try:
         response = await call_next(request)
     except Exception as e:
         response = JSONResponse({"error": str(e)}, status_code=500)
-    for k, v in CORS_HEADERS.items():
+    for k, v in cors_for(request).items():
         response.headers[k] = v
     return response
 
@@ -72,7 +82,7 @@ class Query(BaseModel):
 @app.get("/api")
 @app.get("/api/latency")
 def health():
-    return {"status": "ok", "usage": "POST {\"regions\": [...], \"threshold_ms\": 180}"}
+    return {"status": "ok"}
 
 
 @app.post("/")
